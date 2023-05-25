@@ -2,6 +2,7 @@ package com.josejordan.recorder
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.net.Uri
@@ -29,43 +30,7 @@ class MainActivity : AppCompatActivity() {
     private val outputFormat = MediaRecorder.OutputFormat.MPEG_4
     private val encoder = MediaRecorder.AudioEncoder.AAC
 
-/*    private fun getOutputFile(): Uri? {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val audioFileName = "myrecording_${timestamp}.mp4"
-
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, audioFileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MUSIC)
-            }
-        }
-
-        return contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
-    }*/
-
-/*    private fun getOutputFile(): Uri? {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        //val audioFileName = "myrecording_${timestamp}.mp4"
-        val audioFileName = "myrecording_${timestamp}"
-
-        val storageDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-        val audioFile =  File(storageDir, audioFileName)
-
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            val resolver = contentResolver
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, audioFileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "audio/mp4")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-
-            resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-        } else {
-            Uri.fromFile(audioFile)
-        }
-    }*/
-private fun getOutputFile(): Uri? {
+/*private fun getOutputFile(): Uri? {
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
     val audioFileName = "myrecording_${timestamp}"
 
@@ -89,7 +54,21 @@ private fun getOutputFile(): Uri? {
     } else {
         Uri.fromFile(audioFile)
     }
-}
+}*/
+
+    private fun getOutputFile(): File {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val audioFileName = "myrecording_${timestamp}.mp4" // Asegúrate de agregar la extensión del archivo
+
+        // Creamos la subcarpeta "Grabaciones" dentro del directorio de archivos privados de la aplicación
+        val storageDir = File(filesDir, "Grabaciones")
+        if (!storageDir.exists()) {
+            storageDir.mkdirs()
+        }
+
+        return File(storageDir, audioFileName)
+    }
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,6 +100,13 @@ private fun getOutputFile(): Uri? {
             }
             isRecording = !isRecording
         }
+
+        val audiosButton = findViewById<Button>(R.id.audiosButton)
+        audiosButton.setOnClickListener {
+            val intent = Intent(this, AudioListActivity::class.java)
+            startActivity(intent)
+        }
+
     }
 
     override fun onRequestPermissionsResult(
@@ -139,6 +125,7 @@ private fun getOutputFile(): Uri? {
         }
     }
 
+/*
     fun startRecording() {
         audioUri = getOutputFile()
         Log.d("MainActivity", "Output file: $audioUri")
@@ -167,6 +154,29 @@ private fun getOutputFile(): Uri? {
             }
         }
     }
+*/
+
+    fun startRecording() {
+        val outputFile = getOutputFile()
+        Log.d("MainActivity", "Output file: ${outputFile.absolutePath}")
+
+        mediaRecorder = MediaRecorder().apply {
+            setAudioSource(audioSource)
+            setOutputFormat(outputFormat)
+            setOutputFile(outputFile.absolutePath)
+            setAudioEncoder(encoder)
+
+            try {
+                prepare()
+                start()
+                Log.d("MainActivity", "Recording started successfully")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to record audio", e)
+                Toast.makeText(this@MainActivity, "Failed to record audio", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
 
     fun stopRecording() {
         try {
